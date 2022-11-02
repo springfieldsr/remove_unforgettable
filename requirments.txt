@@ -1,0 +1,8 @@
+torch
+torchvision
+tqdm
+transformers
+numpy
+requests
+pandas
+sklearn
