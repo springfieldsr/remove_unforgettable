@@ -115,8 +115,12 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
         train_loss = 0
         batch_size = args.batch_size
 
-        # manually create indices for dataloader
-        feed_indices = [i for i in torch.randperm(len(train_dataset)).tolist() if i not in memorized_indices]
+        # if in need of memorized fraction, we do not remove any data points from training process
+        # else, we remove memorized ones
+        if args.return_memorized_fraction:
+            feed_indices = torch.randperm(len(train_dataset)).tolist()
+        else:
+            feed_indices = [i for i in torch.randperm(len(train_dataset)).tolist() if i not in memorized_indices]
         shuffled_dataset = Subset(train_dataset, feed_indices)
         dataloader = DataLoader(shuffled_dataset, batch_size, shuffle=False)
 
@@ -136,13 +140,19 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
                     match = logits.argmax(dim=1) == y
                     batch_indices = feed_indices[total: total + X.shape[0]]
                     for idx, i in enumerate(batch_indices):
+                        if memory_streak_counter[i] == -1: continue
                         if match[idx]:
                             memory_streak_counter[i] += 1
                             if memory_streak_counter[i] == args.streak:
                                 memorized_indices.add(i)
                                 memory_streak_counter[i] = 0
                         else:
-                            memory_streak_counter[i] = 0
+                            # if we need fraction, set every wrongly predicted data point which has been correctly
+                            # predicted before as -1
+                            if args.return_memorized_fraction and memory_streak_counter[i] > 0:
+                                memory_streak_counter[i] = -1
+                            else:
+                                memory_streak_counter[i] = 0
 
                 acc = torch.sum(torch.argmax(logits, dim=1) == y).item()
                 loss.backward()
@@ -166,7 +176,8 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
 
         # if we met the check interval, then check examples that are supposedly memorized
         # if the model forgot about them, then move them back to the training dataset
-        if e > args.streak and e % args.check_interval == 0:
+        # TODO: in fraction computation, do we check the memorized or not?
+        if e > args.streak and e % args.check_interval == 0 and not args.return_memorized_fraction:
             print('Entering check interval')
             memorized_indices_list = list(memorized_indices)
             memorized_dataset = CustomDataset("check", data=[train_dataset[i] for i in memorized_indices_list])
@@ -196,6 +207,10 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
                 if patience > PATIENCE_EPOCH:
                     print("Training early stops at epoch {}".format(e))
                     break
+
+    if args.return_memorized_fraction:
+        truly_unforgettable = [k for k, v in memory_streak_counter.items() if v > 0]
+        return len(memorized_indices) / len(truly_unforgettable)
 
     return memorized_indices
 

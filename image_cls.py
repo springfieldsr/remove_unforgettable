@@ -35,10 +35,14 @@ def main():
     # model = torchvision.models.resnet18().to(device)
     # TODO: pretrained or not matters or not? Not sure
     model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=False).to(device)
-    remove_indices = train(model, args.epochs, train_dataset, test_loader, device, args)
-    
-    saved_dest = DumpIndicesToFile(remove_indices, args.dataset, expr_path)
-    print("Indices of memorized indices are saved to " + saved_dest)
+
+    if not args.return_memorized_fraction:
+        remove_indices = train(model, args.epochs, train_dataset, test_loader, device, args)
+        saved_dest = DumpIndicesToFile(remove_indices, args.dataset, expr_path)
+        print("Indices of memorized indices are saved to " + saved_dest)
+    else:
+        fraction = train(model, args.epochs, train_dataset, test_loader, device, args)
+        print("{} of the marked data points are actually never forgetten".format(fraction))
 
     # cleanse the dataset and retrain
     # model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True).to(device)

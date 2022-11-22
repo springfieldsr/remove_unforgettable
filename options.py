@@ -30,5 +30,8 @@ def options():
     parser.add_argument('--baseline', dest='baseline',
                         default=False, action="store_true",
                         help='train without any modification')
+    parser.add_argument('--return_memorized_fraction', dest='return_memorized_fraction',
+                        default=False, action="store_true",
+                        help='return the fraction of the truly memorized samples')
     args = parser.parse_args()
     return args
