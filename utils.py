@@ -188,12 +188,13 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
                 for X, y in memorized_dataloader:
                     X, y = X.to(device), y.to(device)
                     logits = model(X)
-                    match += torch.argmax(logits, dim=1) == y
+                    match = torch.argmax(logits, dim=1) == y #fix
                     batch_indices = memorized_indices_list[memorized_total: memorized_total + X.shape[0]]
                     for idx, i in enumerate(batch_indices):
                         if not match[idx]:
                             memorized_indices.remove(i)
                             forgot_count += 1
+                    memorized_total += X.shape[0] #fix
             print("Model forgets {} examples out of {} total memorized ones".format(forgot_count,
                                                                                     len(memorized_indices_list)))
 
