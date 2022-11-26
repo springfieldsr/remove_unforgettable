@@ -1,6 +1,6 @@
 from utils import *
 from options import options
-
+import time
 
 def main():
     # see options.py
@@ -36,6 +36,7 @@ def main():
     # TODO: pretrained or not matters or not? Not sure
     model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=False).to(device)
 
+    start = time.time()
     if not args.return_memorized_fraction:
         remove_indices = train(model, args.epochs, train_dataset, test_loader, device, args)
         saved_dest = DumpIndicesToFile(remove_indices, args.dataset, expr_path)
@@ -43,7 +44,7 @@ def main():
     else:
         fraction = train(model, args.epochs, train_dataset, test_loader, device, args)
         print("{} of the marked data points are actually never forgetten".format(fraction))
-
+    print(f"Total time elpased : {time.time()-start:.2f} ")
     # cleanse the dataset and retrain
     # model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True).to(device)
     # train_dataset.cleanse(pred_indices)

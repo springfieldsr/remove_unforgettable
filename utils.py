@@ -128,6 +128,7 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
             sum_acc = 0
             total = 0
             for X, y in dataloader:
+                if X.shape[0]==1: continue # avoid batch size = 1
                 X, y = X.to(device), y.to(device)
                 opt.zero_grad()
                 logits = model(X)
@@ -168,7 +169,7 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
 
         # TODO: feel free to remove this print
         if not args.baseline:
-            print(len(memorized_indices))
+            print(f"Epoch {e} - size of memorized data {len(memorized_indices)}, size of training data {len(dataloader)} " )
 
         validation_accuracy = eval(model, test_dataloader, device)
         print("Epoch {} - Training loss: {:.4f}, Validation Accuracy: {:.4f}".format(e, train_loss / len(dataloader),
