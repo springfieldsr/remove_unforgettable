@@ -169,7 +169,7 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
 
         # TODO: feel free to remove this print
         if not args.baseline:
-            print(f"Epoch {e} - size of memorized data {len(memorized_indices)}, size of training data {len(dataloader)} " )
+            print(f"Epoch {e} - size of memorized data {len(memorized_indices)}, size of training data {len(dataloader) * batch_size} " )
 
         validation_accuracy = eval(model, test_dataloader, device)
         print("Epoch {} - Training loss: {:.4f}, Validation Accuracy: {:.4f}".format(e, train_loss / len(dataloader),
@@ -212,7 +212,8 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
 
     if args.return_memorized_fraction:
         truly_unforgettable = [k for k, v in memory_streak_counter.items() if v > 0]
-        return len(memorized_indices) / len(truly_unforgettable)
+        print(f"num unforgettable = {len(truly_unforgettable)}, num memorized indices = {len(memorized_indices)}  ")
+        return len(memorized_indices) / len(truly_unforgettable), truly_unforgettable
 
     return memorized_indices
 

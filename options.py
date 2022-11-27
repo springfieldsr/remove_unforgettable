@@ -33,5 +33,8 @@ def options():
     parser.add_argument('--return_memorized_fraction', dest='return_memorized_fraction',
                         default=False, action="store_true",
                         help='return the fraction of the truly memorized samples')
+    parser.add_argument('--remove_indices', dest='remove_indices',
+                        default=None, type=str,
+                        help='path to file with indices to remove')
     args = parser.parse_args()
     return args

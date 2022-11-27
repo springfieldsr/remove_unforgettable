@@ -1,6 +1,6 @@
 from utils import *
 from options import options
-import time
+import time, random
 
 def main():
     # see options.py
@@ -32,6 +32,12 @@ def main():
 
     test_loader = DataLoader(test_dataset, args.batch_size, shuffle=False)
 
+    if args.remove_indices: # not None
+        # remove_indices = set([int(x) for x in open(args.remove_indices).read().splitlines()])
+        remove_indices = [int(x) for x in open(args.remove_indices).read().splitlines()]
+        remove_indices = set(random.sample(remove_indices, int(0.9*len(remove_indices))))
+        train_indices = [i for i in range(len(train_dataset)) if i not in remove_indices]
+        train_dataset = Subset(train_dataset, train_indices)
     # model = torchvision.models.resnet18().to(device)
     # TODO: pretrained or not matters or not? Not sure
     model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=False).to(device)
@@ -42,8 +48,10 @@ def main():
         saved_dest = DumpIndicesToFile(remove_indices, args.dataset, expr_path)
         print("Indices of memorized indices are saved to " + saved_dest)
     else:
-        fraction = train(model, args.epochs, train_dataset, test_loader, device, args)
+        fraction, truly_unforgettable = train(model, args.epochs, train_dataset, test_loader, device, args)
         print("{} of the marked data points are actually never forgetten".format(fraction))
+        saved_dest = DumpIndicesToFile(truly_unforgettable, args.dataset, expr_path)
+        print("Indices of truly unforgettable data are saved to " + saved_dest)
     print(f"Total time elpased : {time.time()-start:.2f} ")
     # cleanse the dataset and retrain
     # model = torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True).to(device)
