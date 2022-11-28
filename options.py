@@ -36,5 +36,8 @@ def options():
     parser.add_argument('--remove_indices', dest='remove_indices',
                         default=None, type=str,
                         help='path to file with indices to remove')
+    parser.add_argument('--remove_fraction', dest='remove_fraction',
+                        default=False, action="store_true",
+                        help='remove only a fraction of the memrozed indices while retraining')
     args = parser.parse_args()
     return args

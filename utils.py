@@ -8,7 +8,7 @@ import tqdm
 import re
 import random
 import string
-import os
+import os, time
 from torch.utils.data import DataLoader, Subset
 from const import PATIENCE_EPOCH
 
@@ -83,7 +83,7 @@ def eval(model, test_dataloader, device):
     return match_count / total_count
 
 
-def train(model, epoch, train_dataset, test_dataloader, device, args):
+def train(model, epoch, train_dataset, test_dataloader, device, args, start = 0):
     """
     Input:
     model
@@ -169,11 +169,11 @@ def train(model, epoch, train_dataset, test_dataloader, device, args):
 
         # TODO: feel free to remove this print
         if not args.baseline:
-            print(f"Epoch {e} - size of memorized data {len(memorized_indices)}, size of training data {len(dataloader) * batch_size} " )
+            print(f"Epoch {e} - size of memorized data {len(memorized_indices)}, size of training data {len(dataloader) * batch_size}" )
 
         validation_accuracy = eval(model, test_dataloader, device)
-        print("Epoch {} - Training loss: {:.4f}, Validation Accuracy: {:.4f}".format(e, train_loss / len(dataloader),
-                                                                                     validation_accuracy))
+        print("Epoch {} - Training loss: {:.4f}, Validation Accuracy: {:.4f}, time {:.2f}".format(e, train_loss / len(dataloader),
+                                                                                     validation_accuracy, time.time()-start))
 
         # if we met the check interval, then check examples that are supposedly memorized
         # if the model forgot about them, then move them back to the training dataset
