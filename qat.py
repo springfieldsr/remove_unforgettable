@@ -16,7 +16,7 @@ class QuantizedResNet(nn.Module):
         return x
 
 
-def train(model, epoch, train_dataloader, test_dataloader, device, args):
+def train(model, epoch, train_dataloader, test_dataloader, device, args, start=0):
     """
     Input:
     model
@@ -30,7 +30,7 @@ def train(model, epoch, train_dataloader, test_dataloader, device, args):
     device
         string of either 'cuda' or 'cpu'
     """
-
+    print("QAT training")
     criterion = nn.CrossEntropyLoss()
     opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=5e-4)
 
@@ -65,8 +65,8 @@ def train(model, epoch, train_dataloader, test_dataloader, device, args):
                                  acc=sum_acc / total)
 
         validation_accuracy = eval(model, test_dataloader, device)
-        print("Epoch {} - Training loss: {:.4f}, Val Accuracy: {:.4f}".format(e, train_loss/len(train_dataloader),
-                                                                              validation_accuracy))
+        print("Epoch {} - Training loss: {:.4f}, Val Accuracy: {:.4f}, time: {:.2f}".format(e, train_loss/len(train_dataloader),
+                                                                              validation_accuracy, time.time()-start))
 
         # Early stopping
         if args.early_stop:
@@ -126,7 +126,9 @@ def main():
     quant_model = QuantizedResNet(quant_model)
 
     quant_model_prepared = torch.quantization.prepare_qat(quant_model.train())
-    train(quant_model_prepared, args.epochs, train_loader, test_loader, device, args)
+    start = time.time()
+    train(quant_model_prepared, args.epochs, train_loader, test_loader, device, args, start)
+    print(f"Total time elapsed: {time.time()-start:.2f}")
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ import string
 import os, time
 from torch.utils.data import DataLoader, Subset
 from const import PATIENCE_EPOCH
-
+import numpy as np
 from sklearn.datasets import fetch_20newsgroups
 
 
@@ -251,3 +251,91 @@ def DumpIndicesToFile(noise, dataset_name, dir):
         for n in noise:
             f.write(str(n) + '\n')
     return dest
+
+# noisy
+class ShuffledDataset():
+    def __init__(self, dataset_name, root, shuffle_percentage, transform=None, train=True, download=True, noise_type='symmetric'):
+        """
+        Input:
+        dataset_name
+            string of desired dataset name
+        root
+            string of data download destination
+        shuffle_percentage
+            float between [0, 1] to specify what fraction of train data to have incorrect labels
+        train
+            bool to specify wheter the dataset is for train or test
+        download
+            bool to specify whether to download the dataset specified by dataset_name
+        transform
+            operations to perform transformation on the dataset
+        """
+        if dataset_name == "CIFAR10":
+            self.dataset = torchvision.datasets.CIFAR10(root=root, train=train, download=download, transform=transform)
+            self.label_len = 10
+        elif dataset_name == "CIFAR100":
+            self.dataset = torchvision.datasets.CIFAR100(root=root, train=train, download=download, transform=transform)
+            self.label_len = 100
+        else:
+            raise NotImplementedError
+
+        # Force the test set to be intact
+        percentage = train * shuffle_percentage
+        dataset_len = len(self.dataset)
+        if noise_type=='asymmetric':
+            self._create_shuffle_mapping_asymmetric_cifar10(self.dataset.targets, percentage)
+        else: #uniform, symmetric noise
+            indices_to_shuffle = random.sample(range(dataset_len), int(percentage * dataset_len))
+            self._create_shuffle_mapping(indices_to_shuffle)
+
+    def _create_shuffle_mapping(self, indices):
+        """
+        Input:
+        indices
+            list of int to specify which samples to shuffle label
+        """
+        self.mapping = {}
+        for index in indices:
+            _, label = self.dataset[index]
+            label_range = list(range(self.label_len))
+            label_range.remove(label)
+            new_label = random.choice(label_range)
+            self.mapping[index] = new_label
+
+    def _create_shuffle_mapping_asymmetric_cifar10(self, y_train, noise, random_state=None, nb_classes=10):
+        """mistakes:
+            flip in the symmetric way
+        """
+        self.mapping = {}
+        if noise == 0:
+            return
+        print("asymmetric shuffle")
+        source_class = [9, 2, 3, 5, 4]
+        target_class = [1, 0, 5, 3, 7]
+
+        for s, t in zip(source_class, target_class):
+            cls_idx = np.where(np.array(y_train) == s)[0]
+            n_noisy = int(noise * cls_idx.shape[0])
+            noisy_sample_index = np.random.choice(cls_idx, n_noisy, replace=False)
+            for idx in noisy_sample_index:
+                self.mapping[idx] = t
+        
+
+    def __getitem__(self, index):
+        sample, label = self.dataset[index]
+        label = self.mapping.get(index, label)
+        return (sample, label)
+
+    def get_shuffle_mapping(self):
+        return self.mapping
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def cleanse(self,remove_list):
+        mask = torch.ones(len(self.dataset), dtype=bool)
+        mask[remove_list] = False
+        self.dataset.data = self.dataset.data[mask] 
+        self.dataset.targets = (torch.tensor(self.dataset.targets)[mask]).tolist() 
+        self.mapping = {}
+

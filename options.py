@@ -39,5 +39,14 @@ def options():
     parser.add_argument('--remove_fraction', dest='remove_fraction',
                         default=False, action="store_true",
                         help='remove only a fraction of the memrozed indices while retraining')
+    parser.add_argument('--nt',dest='noise_type',
+                    default='symmetric',type=str,
+                    help='noise type: symmetric/asymmetric')
+    parser.add_argument('--k',dest='top_k',
+                    default=0.05,type=float,
+                    help='noise fraction 0-1')
+    parser.add_argument('--ls',dest='label_shuffle',
+                    default=True,type=bool,
+                    help='wheter to shuffle labels of k percent of training samples')
     args = parser.parse_args()
     return args
